@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fart KingKong - UnghiaTunADR</title>
+<meta
+    property="og:image"
+    content="img/fart-kingkong-mini.png"
+/>
+<link href="img/fart-kingkong.ico" rel="icon" type="image/x-icon">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    background: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+.container { text-align: center; position: relative; z-index: 1; padding-top: 50px; }
+.hello-text { font-size: 3.5rem; color: #fff200; text-shadow: 2px 2px 8px #000; margin: 20px 0 10px; animation: pulse 1.5s infinite alternate;}
+.subtitle { font-size: 1.2rem; color: #ffffffcc; margin-bottom: 30px; }
+.action-button {
+    padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 12px;
+    border: none; background: linear-gradient(90deg,#ff4e00,#ffcc00);
+    color:white; font-weight:bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s ease;
+}
+.action-button:hover { transform: scale(1.1); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+.kingkong-logo { width: 200px; animation: bounce 1.5s infinite alternate; }
+canvas { display: block; margin: 0 auto; background:#4ec0ca; border:6px solid #2b7c82; image-rendering: pixelated; }
+.hidden { display: none !important; }
+
+@keyframes pulse { 0% { text-shadow: 2px 2px 8px #000; } 100% { text-shadow: 4px 4px 15px #000; } }
+@keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-15px); } }
+
+.start-bg {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: linear-gradient(270deg,#ff4e00,#ff8c00,#ff4e00,#ffcc00);
+    background-size: 800% 800%;
+    animation: gradientBG 12s ease infinite;
+    z-index:-1;
+}
+@keyframes gradientBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+#difficultySelect {
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 16px;
+    border: 3px solid #fff;
+    background: #222;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    appearance: none;
+    outline: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="white"><polygon points="0,0 12,0 6,6"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+}
+
+#difficultySelect:hover {
+    transform: scale(1.03);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+
+#difficultySelect option.de { color: #02f533; font-weight: bold; }
+#difficultySelect option.bth { color: #0277f5; font-weight: bold; }
+#difficultySelect option.kho { color: #f50202; font-weight: bold; }
+
+#difficultySelect.delected { 
+    border-color: #02f533; 
+    background: linear-gradient(135deg, #02f533, #00aa20);
+    color: #000; 
+}
+#difficultySelect.bthlected { 
+    border-color: #0277f5; 
+    background: linear-gradient(135deg, #0277f5, #004bb5); 
+    color: #fff; 
+}
+#difficultySelect.kholected { 
+    border-color: #f50202; 
+    background: linear-gradient(135deg, #f50202, #b50000); 
+    color: #fff; 
+}
+
+#difficultySelect:focus {
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+    transform: scale(1.05);
+}
+
+</style>
+</head>
+<body>
+
+<div class="container" id="greeting-page">
+    <div class="start-bg"></div>
+    <img src="img/fart-kingkong.png" class="kingkong-logo" alt="KingKong">
+    <h1 class="hello-text">FART KINGKONG</h1>
+    <p class="subtitle">Chào mừng đến với thế giới thách thức!</p>
+
+    <div style="margin-bottom:20px;">
+        <label style="margin-right:10px; color:white; font-weight:bold;">Chọn độ khó:</label>
+        <select id="difficultySelect" style="padding:8px 12px; font-size:16px; border-radius:8px;">
+            <option value="easy" class="de">Dễ</option>
+            <option value="normal" class="bth" selected>Bình thường</option>
+            <option value="hard" class="kho">Khó</option>
+        </select>
+    </div>
+
+    <button class="action-button" id="startBtn">BẮT ĐẦU</button>
+</div>
+
+<canvas id="game" width="320" height="480" class="hidden"></canvas>
+
+<script>
+const select = document.getElementById("difficultySelect");
+select.addEventListener("change", () => {
+    select.classList.remove("delected", "bthlected", "kholected");
+    if(select.value === "easy") select.classList.add("delected");
+    if(select.value === "normal") select.classList.add("bthlected");
+    if(select.value === "hard") select.classList.add("kholected");
+});
+select.dispatchEvent(new Event('change'));
+let started = false;
+function Start() {
+    if(started) return;
+    started = true;
+    const container = document.getElementById('greeting-page');
+    container.classList.add('hidden');
+    const canvas = document.getElementById('game');
+    canvas.classList.remove('hidden');
+    const ctx = canvas.getContext('2d');
+
+    const BASE_WIDTH = 320, BASE_HEIGHT = 480;
+    let lavaHeight = 300, lavaRise = 0, lavaSpeed = 3, lavaFinished = false;
+    let KINGKONG_HITBOX_PADDING = 8;
+    let score_win = 0
+
+    if (select.value === "easy") {KINGKONG_HITBOX_PADDING = 15; score_win = 50;}
+    if (select.value === "normal") {KINGKONG_HITBOX_PADDING = 8; score_win = 100;}
+    if (select.value === "hard") {KINGKONG_HITBOX_PADDING = 5; score_win = 500;}
+
+    function resizeCanvas() {
+        let scale = Math.min(window.innerWidth/BASE_WIDTH, window.innerHeight/BASE_HEIGHT);
+        canvas.width = BASE_WIDTH*scale; canvas.height = BASE_HEIGHT*scale;
+        ctx.setTransform(scale,0,0,scale,0,0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    let bird = {x:50, y:150, width:40, height:40, velocity:0, gravity:0.4, jump:-7};
+    let pipes = [], frame = 0, score = 0, gameOver = false, win = false, fartParticles = [];
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+        gap: 20px;
+        z-index: 2;
+    `;
+    document.body.appendChild(buttonContainer);
+    const restartBtn = document.createElement("button");
+    restartBtn.innerText = "↻ Chơi lại";
+    restartBtn.style.cssText = `
+        padding: 12px 25px;
+        font-size: 18px;
+        border: none;
+        background: #40ff00;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+    `;
+    buttonContainer.appendChild(restartBtn);
+    const backBtn = document.createElement("button");
+    backBtn.innerText = "↩ Về Menu";
+    backBtn.style.cssText = `
+        padding: 12px 25px;
+        font-size: 18px;
+        border: none;
+        background: #ffa200;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+    `;
+    buttonContainer.appendChild(backBtn);
+    function showButtons(){
+        const canvasRect = canvas.getBoundingClientRect();
+        buttonContainer.style.top = (canvasRect.top + canvasRect.height / 2) + "px";
+        buttonContainer.style.left = (canvasRect.left + canvasRect.width / 2) + "px";
+        buttonContainer.style.display = "flex";
+    }function hideButtons(){
+        buttonContainer.style.display = "none";
+    }restartBtn.onclick = () =>  {
+        resetGame();
+        hideButtons();
+    }
+    canvas.addEventListener("click", () => {
+        if (gameOver && !paused && lavaFinished) { 
+            resetGame();
+            hideButtons();
+        }
+    });
+    document.addEventListener("keydown", e => {
+        if ((e.code === "Space" || e.code === "ArrowUp") && gameOver && !paused && lavaFinished) {
+            e.preventDefault(); 
+            resetGame();
+            hideButtons();
+        }
+    });
+    let paused = false;
+
+    backBtn.onclick = () => {
+        gameOverSound.pause();
+        gameOverSound.currentTime = 0;
+        gameWinSound.pause();
+        gameWinSound.currentTime = 0;
+        fartSound.pause();
+        fartSound.currentTime = 0;
+        paused = true;
+        gameOver = false;
+        win = false;
+        lavaRise = 0;
+        lavaFinished = false;
+        currentGround = 0;
+        score = 0;
+        pipes = [];
+        bird.y = 150;
+        bird.velocity = 0;
+        const container = document.getElementById('greeting-page');
+        container.classList.remove('hidden');
+        const canvas = document.getElementById('game');
+        canvas.classList.add('hidden');
+        hideButtons();
+        started = false;
+    };
+
+
+    function resetGame(){
+        bird.y = 150; bird.velocity = 0;
+        pipes = []; frame = 0; score = 0;
+        gameOver = false; win = false;
+        lavaRise = 0; lavaFinished = false;
+        currentGround = 0;
+        phoenixX = canvas.width + 200;
+        moneyX = canvas.width + 100;
+        hideButtons();
+        paused = false;
+        showYeahText = false;
+    }
+
+    const birdImg = new Image(); birdImg.src = "img/kingkong.png";
+    const gameOverImg = new Image(); gameOverImg.src = "img/gameover.png";
+    const winImg = new Image(); winImg.src = "img/win.png";
+    const blockMagma = new Image(); blockMagma.src = "img/magma.png";
+
+    const phoenixImg = new Image(); phoenixImg.src = "img/phoenix.png";
+    const moneyImg = new Image(); moneyImg.src = "img/money.png";
+    const fartSound = new Audio("audio/fart.mp3");
+    const gameOverSound = new Audio("audio/gameover.mp3");
+    const gameWinSound = new Audio("audio/win.mp3")
+    const yeahSound = new Audio("audio/yeah.mp3")
+    const imagesToLoad = [birdImg, gameOverImg, winImg, phoenixImg, moneyImg, blockMagma];
+    let imagesLoadedCount = 0;
+    imagesToLoad.forEach(img => {
+        img.onload = () => {
+            imagesLoadedCount++;
+            if (imagesLoadedCount === imagesToLoad.length) {
+                update(); 
+            }
+        };
+        img.onerror = () => {
+            console.error(`Lỗi tải ảnh: ${img.src}`);
+            imagesLoadedCount++;
+             if (imagesLoadedCount === imagesToLoad.length) {
+                update(); 
+            }
+        };
+    });
+    if (imagesToLoad.length === 0) update(); 
+
+    function drawBird(){ ctx.drawImage(birdImg,bird.x,bird.y,bird.width,bird.height); }
+
+    function roundRectPart(ctx,x,y,w,h,r,tl,tr,bl,br){
+        ctx.beginPath();
+        ctx.moveTo(x+(tl?r:0),y);
+        ctx.lineTo(x+w-(tr?r:0),y); if(tr) ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+        ctx.lineTo(x+w,y+h-(br?r:0)); if(br) ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        ctx.lineTo(x+(bl?r:0),y+h); if(bl) ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+        ctx.lineTo(x,y+(tl?r:0)); if(tl) ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+    }
+
+    function drawPipes() { 
+        pipes.forEach(pipe => { 
+            if(win) ctx.globalAlpha = Math.max(0, 1 - frame * 0.003);
+            ctx.save(); 
+            roundRectPart(ctx, pipe.x, 0, pipe.width, pipe.top, 15, false, false, true, true); 
+            ctx.clip(); 
+            for(let y=0;y<pipe.top;y+=32) ctx.drawImage(blockMagma, pipe.x, y, pipe.width, 32); 
+            ctx.restore(); 
+            ctx.save(); 
+            roundRectPart(ctx, pipe.x, pipe.bottomY, pipe.width, pipe.bottom, 15, true, true, false, false); 
+            ctx.clip(); 
+            for(let y=pipe.bottomY;y<canvas.height;y+=32) ctx.drawImage(blockMagma, pipe.x, y, pipe.width, 32); 
+            ctx.restore(); 
+            if(win) ctx.globalAlpha = 1;
+        }); 
+    }
+
+    function updatePipes(){
+        if(frame%90===0){
+            let top = Math.random()*200+20; 
+            let gap = 150;
+            if (select.value === "easy") gap = 200;
+            if (select.value === "normal") gap = 150;
+            if (select.value === "hard") gap = 100;
+            pipes.push({x:canvas.width,width:40,top:top,bottomY:top+gap,bottom:canvas.height-(top+gap),scored:false});
+        }
+        pipes.forEach(p=>{p.x-=2; if(!p.scored && p.x+p.width<bird.x){score+=2;p.scored=true;}});
+        pipes = pipes.filter(p=>p.x+p.width>-20);
+    }
+    function drawRoundedRect(ctx, x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.arcTo(x + width, y, x + width, y + radius, radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+        ctx.lineTo(x + radius, y + height);
+        ctx.arcTo(x, y + height, x, y + height - radius, radius);
+        ctx.lineTo(x, y + radius);
+        ctx.arcTo(x, y, x + radius, y, radius);
+        ctx.closePath();
+    }
+
+    function drawScore(){
+        const text = "Score: " + score;
+        const padding = 10;
+        const boxRadius = 8;
+        const textFontSize = 20;
+        ctx.font = "bold " + textFontSize + "px Roboto, Arial, sans-serif";
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        const boxX = 10;
+        const boxY = 10;
+        const boxWidth = textWidth + 2 * padding;
+        const boxHeight = textFontSize + 2 * padding;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.shadowColor = "rgba(255, 255, 255, 0.4)";
+        ctx.shadowBlur = 5;
+
+        drawRoundedRect(ctx, boxX, boxY, boxWidth, boxHeight, boxRadius);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "white";
+        ctx.fillText(text, boxX + padding, boxY + padding + textFontSize * 0.85); 
+    }
+
+    function detectCollision(){
+        if(bird.y<0||bird.y+bird.height>canvas.height) return true;
+        for(let p of pipes){
+            let hb={x:bird.x+KINGKONG_HITBOX_PADDING,y:bird.y+KINGKONG_HITBOX_PADDING,width:bird.width-2*KINGKONG_HITBOX_PADDING,height:bird.height-2*KINGKONG_HITBOX_PADDING};
+            if(hb.x<p.x+p.width && hb.x+hb.width>p.x && (hb.y<p.top || hb.y+hb.height>p.bottomY)) return true;
+        }
+        return false;
+    }
+
+    function detectLavaTouch(){ return bird.y+bird.height >= canvas.height-(lavaHeight+lavaRise); }
+
+    let lavaGradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - 300);
+    lavaGradient.addColorStop(0, "#ff3b00");
+    lavaGradient.addColorStop(1, "#ff8c00");
+
+    function drawLava(){ 
+        ctx.fillStyle="#4ec0ca"; 
+        ctx.fillRect(0,0,canvas.width,canvas.height); 
+        let baseHeight = lavaHeight + lavaRise; let time = frame*0.1; 
+        ctx.fillStyle="#ff3b00"; 
+        for(let x=0;x<canvas.width;x++){ 
+            let y = Math.sin((x+time*10)*0.05)*5 + (canvas.height-baseHeight); 
+            ctx.fillRect(x,y,2,canvas.height-y); 
+        } 
+        ctx.fillStyle="rgba(255,200,0,0.25)"; 
+        ctx.fillRect(0,canvas.height-baseHeight-10,canvas.width,20); 
+    }
+
+    function spawnFart(){
+        for(let i=0;i<4;i++){ 
+            fartParticles.push({
+                x:bird.x-8,
+                y:bird.y+bird.height/2,
+                size:Math.random()*6+6,
+                vx:-Math.random()*1.5-1,
+                vy:(Math.random()-0.5)*1,
+                alpha:1
+            });
+        }
+    }
+
+    let grassBlades = [];
+    let groundHeight = 300;
+    let currentGround = 0;
+
+    function initGrass() {
+        const bladeWidth = 5;
+        const canvasWidth = canvas.width;
+        grassBlades = [];
+        for(let x = 0; x < canvasWidth; x += bladeWidth) {
+            const randomHeight = Math.random() * 10 + 5;
+            grassBlades.push({x: x, height: randomHeight});
+        }
+    }
+    initGrass();
+
+    function drawGroundDynamic(height){
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        ctx.fillStyle = "#7b3f00";
+        ctx.fillRect(0, canvasHeight - height, canvasWidth, height);
+        ctx.fillStyle = "#00cc00";
+        for(let blade of grassBlades){
+            if(blade.height > height) blade.height = height;
+            ctx.fillRect(blade.x, canvasHeight - height - blade.height, 5, blade.height);
+        }
+    }
+
+    function drawFart(){ fartParticles.forEach(p=>{ctx.globalAlpha=p.alpha; ctx.fillStyle="#fff"; ctx.fillRect(p.x,p.y,p.size,p.size); ctx.globalAlpha=1;}); }
+    function updateFart(){ fartParticles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.alpha-=0.03;p.size*=0.95;}); fartParticles=fartParticles.filter(p=>p.alpha>0); }
+
+    const KINGKONG_Y_WIN = canvas.height - groundHeight - bird.height;
+    let phoenixX = canvas.width + 200;
+    let phoenixY = 220;
+    let moneyX = canvas.width + 100;
+    let moneyY = 350;
+    let showYeahText = false;
+
+    function update(){
+        if(paused) {
+            requestAnimationFrame(update);
+            return;
+        }
+        
+        if(!gameOver){
+            drawLava();
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+            updatePipes();
+            drawPipes();
+            drawBird();
+            drawScore();
+            updateFart();
+            drawFart();
+
+            if(score >= score_win && !win){
+                win = true;
+                gameOver = true;
+                bird.velocity = 0;
+                gameWinSound.currentTime = 0;
+                gameWinSound.play();
+                fartSound.pause();
+                fartSound.currentTime = 0;
+            }
+
+            if(detectCollision() || detectLavaTouch()){
+                gameOver = true;
+                gameOverSound.currentTime = 0;
+                gameOverSound.play();
+                fartSound.pause();
+                fartSound.currentTime = 0;
+            }
+
+        } else if(gameOver){
+            if(win){
+                let dy = KINGKONG_Y_WIN - bird.y;
+                let dGround = groundHeight - currentGround;
+                if(Math.abs(dy) > 0.5){
+                    bird.y += dy * 0.1;
+                } else {
+                    bird.y = KINGKONG_Y_WIN;
+                }
+                if(currentGround < groundHeight){
+                    currentGround += dGround * 0.1;
+                    if(currentGround > groundHeight) currentGround = groundHeight;
+                }
+                ctx.fillStyle="#4ec0ca"; ctx.fillRect(0,0,canvas.width,canvas.height); 
+
+                drawGroundDynamic(currentGround);
+                drawBird();
+                drawScore();
+                updateFart();
+                drawFart();
+                drawPipes(); 
+                
+                ctx.drawImage(winImg, 15, 120, 300, 80);
+
+                if(phoenixX > 80) phoenixX -= 4;
+                if(moneyX > 120) moneyX -= 5;
+                ctx.drawImage(phoenixImg, phoenixX, phoenixY, 160, 120);
+                ctx.drawImage(moneyImg, moneyX, moneyY, 80, 40);
+                if(phoenixX <= 80 && moneyX <= 120 && !showYeahText) {
+                    showYeahText = true;
+                    if(yeahSound.paused) { // chỉ play nếu chưa chơi
+                        yeahSound.currentTime = 0;
+                        yeahSound.play();
+                    }
+                    setTimeout (() =>{
+                        showButtons();
+                    },3000);
+                }
+                if(showYeahText){
+                    const boxWidth = 100;
+                    const boxHeight = 35;
+                    const boxX = bird.x - 30;
+                    const boxY = bird.y - 40;
+                    const radius = 8;
+                    ctx.fillStyle = "rgba(0,0,0,0.7)";
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(boxX + radius, boxY);
+                    ctx.lineTo(boxX + boxWidth - radius, boxY);
+                    ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + radius);
+                    ctx.lineTo(boxX + boxWidth, boxY + boxHeight - radius);
+                    ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - radius, boxY + boxHeight);
+                    ctx.lineTo(boxX + radius, boxY + boxHeight);
+                    ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - radius);
+                    ctx.lineTo(boxX, boxY + radius);
+                    ctx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 8px Roboto";
+                    ctx.fillText("Yeah! Gặp lại bố mẹ rồi.", boxX + 8, boxY + 22);
+                }
+            } else {
+                drawLava();
+                if(!lavaFinished){
+                    lavaRise += lavaSpeed;
+                    if(lavaRise >= canvas.height){ lavaRise = canvas.height; lavaFinished = true; }
+                }
+                drawPipes();
+                drawBird();
+                drawScore();
+                updateFart();
+                updateFart();
+                drawFart();
+                if(lavaFinished){
+                    ctx.drawImage(gameOverImg, 35, 120, 250, 80);
+                    showButtons();
+                }
+            }
+        }
+
+        frame++;
+        requestAnimationFrame(update);
+    }
+
+    canvas.addEventListener("click",()=>{ if(gameOver) return; bird.velocity=bird.jump; spawnFart(); fartSound.currentTime=0; fartSound.play();});
+    document.addEventListener("keydown",e=>{ if(e.code==="Space"||e.code==="ArrowUp"){ if(gameOver) return; bird.velocity=bird.jump; spawnFart(); fartSound.currentTime=0; fartSound.play(); } });
+
+}
+
+document.getElementById("startBtn").addEventListener("click", Start);
+</script>
+</body>
+</html>
